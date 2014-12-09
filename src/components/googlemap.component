@@ -6,7 +6,7 @@
 	<apex:attribute name="zip" description="zip code" type="String" required="true" />
 	<apex:attribute name="locationName" description="Name of the location (ex: Account Name)" required="true" type="String" />
 	<apex:attribute name="mapHeight" description="in pixels give the height for the map" default="190" type="Integer" />
-
+	<!-- Some change here -->
 
 	<script type="text/javascript" src="https://maps.google.com/maps/api/js?sensor=false"></script>
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script> 

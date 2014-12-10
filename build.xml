@@ -1,0 +1,311 @@
+<project name="Salesforce ANT Deployment" default="NONE" basedir="." xmlns:sf="antlib:com.salesforce">
+    <property file="build.properties"/>
+    <property environment="env"/>
+	<tstamp><format property="START_TIME" pattern="dd_MMM_yyyy_HH_mm_ss"/></tstamp>
+	
+	<!-- Retrieve Origin -->
+    <target name="retrieve_origin">
+	  <record name="Archive\${orig.name}_retrieve_origin_${START_TIME}.log" action="start"/>
+		  <echo message="RETRIEVING FROM ORIGIN: ${orig.name}" />
+		  <!-- Archive Folder -->
+		  <mkdir dir="Archive"/>
+		  <!-- Backup Folder -->
+		  <move file="DEPLOYMENT_ORIGIN" tofile="Archive\DEPLOYMENT_ORIGIN_BACKUP_${START_TIME}" failonerror="false"/>	
+		  <!-- Create Folder-->
+		  <mkdir dir="DEPLOYMENT_ORIGIN"/>
+		  
+		  <!-- Retrieve the contents from package.xml and copy then into DEPLOYMENT_ORIGIN-->
+		  <sf:retrieve username="${orig.username}" password="${orig.password}" serverurl="${orig.serverurl}" maxPoll="${sf.maxPoll}" pollWaitMillis="${sf.pollWaitMillis}" retrieveTarget="DEPLOYMENT_ORIGIN" unpackaged="package.xml"  /> 
+	  <record name="Archive\${orig.name}_retrieve_origin_${START_TIME}.log" action="stop"/>
+	</target>
+	
+	<!-- Retrieve Destination -->
+	<target name="retrieve_dest">
+	    <record name="Archive\${dest.name}_retrieve_dest_${START_TIME}.log" action="start"/>
+		  <echo message="RETRIEVING FROM DEST: ${dest.name}" />
+		  <!-- Archive Folder -->
+		  <mkdir dir="Archive"/>
+		  <!-- Backup Folder -->
+		  <move file="DEPLOYMENT_DEST" tofile="Archive\DEPLOYMENT_DEST_BACKUP_${START_TIME}" failonerror="false"/>
+		  <!-- Create Folder-->
+		  <mkdir dir="DEPLOYMENT_DEST"/>
+		  
+		  <!-- Retrieve the contents from package.xml and copy then into DEPLOYMENT_DEST-->
+		  <sf:retrieve username="${dest.username}" password="${dest.password}" serverurl="${dest.serverurl}" maxPoll="${sf.maxPoll}" pollWaitMillis="${sf.pollWaitMillis}" retrieveTarget="DEPLOYMENT_DEST" unpackaged="package.xml"  />
+	  <record name="Archive\${dest.name}_retrieve_dest_${START_TIME}.log" action="stop"/>
+	</target>
+	
+	<!-- Retrieve Destination, Origin, and Validate in Destination -->
+	<target name="retrieve_deploy_check">
+		<antcall target="retrieve_origin"/>
+		
+		<record name="Archive\${orig.name}_${dest.name}_retrieve_deploy_check_${START_TIME}.log" action="start"/>		
+		  <echo message="RETRIEVING FROM ORIGIN: ${orig.name} AND VALIDATING IN DESTINATION: ${dest.name}" />
+		  
+		  <!-- Retrieve the contents from package.xml and copy then into DEPLOYMENT_ORIGIN-->
+		  <sf:retrieve username="${orig.username}" password="${orig.password}" serverurl="${orig.serverurl}" maxPoll="${sf.maxPoll}" pollWaitMillis="${sf.pollWaitMillis}" retrieveTarget="DEPLOYMENT_ORIGIN" unpackaged="package.xml"  />
+		  
+		  <!-- Upload the contents of the "DEPLOYMENT_ORIGIN"  -->
+		  <sf:deploy checkOnly="true" username="${dest.username}" password="${dest.password}" serverurl="${dest.serverurl}" maxPoll="${sf.maxPoll}" pollWaitMillis="${sf.pollWaitMillis}" deployRoot="DEPLOYMENT_ORIGIN" logType="Detail"/>
+		<record name="Archive\${orig.name}_${dest.name}_retrieve_deploy_check_${START_TIME}.log" action="stop"/>
+	</target>
+	
+	
+	<!-- Retrieve Destination, Origin, and Deploy in Destination -->
+	<target name="retrieve_deploy_confirmed">
+			<!---->
+		<antcall target="retrieve_dest"/>
+		<antcall target="retrieve_origin"/>
+		
+		<record name="Archive\${orig.name}_${dest.name}_retrieve_deploy_confirmed_${START_TIME}.log" action="start"/>
+		  <echo message="RETRIEVING FROM ORIGIN ${orig.name} AND DEPLOYING IN DESTINATION ${dest.name}" />
+		  
+		  <!-- Retrieve the contents from package.xml and copy then into DEPLOYMENT_ORIGIN -->
+		  <sf:retrieve username="${orig.username}" password="${orig.password}" serverurl="${orig.serverurl}" maxPoll="${sf.maxPoll}" pollWaitMillis="${sf.pollWaitMillis}" retrieveTarget="DEPLOYMENT_ORIGIN" unpackaged="package.xml"  />
+		  
+		  <!-- Upload the contents of the "DEPLOYMENT_ORIGIN" package -->
+		  <sf:deploy checkOnly="false" username="${dest.username}" password="${dest.password}" serverurl="${dest.serverurl}" maxPoll="${sf.maxPoll}" pollWaitMillis="${sf.pollWaitMillis}" deployRoot="DEPLOYMENT_ORIGIN" logType="Detail"/>
+			
+		<record name="Archive\${orig.name}_${dest.name}_retrieve_deploy_confirmed_${START_TIME}.log" action="stop"/>
+	</target>
+	<!--
+	
+	<project name="Salesforce CR Deployment Script" default="usage" basedir="." xmlns:sf="antlib:com.salesforce">
+	<property file="build.properties"/>
+	<property environment="env"/>
+
+	<target name="usage">
+		<echo>Usage: ant [task]
+Task options:
+ant retrieve: Retrieves the Salesforce metadata defined in package/package.xml
+ant validate: Simulates a deployment of the package and returns pass/fail debugging information
+ant deploy: Deploys the package items defined in package/package.xml
+ant undeploy: Rolls back deployed items (must follow ant deploy)
+
+sforce.properties
+--- Retrieve ---
+Org:		${retrieve.org}
+Username:	${retrieve.username}
+URL:		${retrieve.url}
+
+--- Deploy ---
+Org:		${deploy.org}
+Username:	${deploy.username}
+URL:		${deploy.url}
+
+--- Sandbox Review ---
+Username:	${sandbox.username}
+URL:		${sandbox.url}
+Target:		${sandbox.target}
+(scp -r package ${sandbox.username}@${sandbox.url}:${sandbox.target})</echo>
+
+<echo>Current directory is ${user.dir}.</echo>
+	</target>
+
+	-- Use Test out deploy and retrieve verbs for package 'mypkg' --
+	
+	<target name="prodretrieve">
+		<sf:retrieve 
+			username="${qa.deploy.username}" 
+			password="${qa.deploy.password}" 
+			serverurl="${qa.deploy.serverurl}"  
+			retrieveTarget="PRODsrc" 
+			unpackaged="PRODsrc/package.xml" 
+			pollWaitMillis="10000"
+			maxPoll="200" />
+	</target>
+	
+	
+	<target name="devretrieve">
+		<sf:retrieve 
+			username="${dev.username}" 
+			password="${dev.password}" 
+			serverurl="${dev.serverurl}" 
+			retrieveTarget="DEVsrc" 
+			unpackaged="DEVsrc/package.xml" 
+			pollWaitMillis="20000"
+			maxPoll="200" />
+	</target>
+
+	<macrodef name="retrievedevUnpackaged" description="Retrieves all unpackaged metadata from the target org into the specified dir">
+    <attribute name="dir" description="The local directory to store the metadata files" />
+    <sequential>
+
+      -- Create a clean output directory structure --
+      <delete dir="@{dir}" />
+      <mkdir dir="@{dir}"/>
+      <mkdir dir="@{dir}/unpackaged"/>
+      <mkdir dir="@{dir}/standard"/>
+
+      -- Retrieve standard objects (uses lib/standard_objects.xml as the manifest) --
+      --<sf:retrieve 
+        username="${sf.username}" 
+        password="${sf.password}" 
+        serverurl="${sf.serverurl}" 
+        retrieveTarget="@{dir}/standard" 
+        unpackaged="lib/standard_objects.xml"/>--
+
+      -- Retrieve unpackaged metadata (uses lib/all_metadata_types.xml as the manifest) --
+      <sf:retrieve 
+        username="${dev.username}" 
+        password="${dev.password}" 
+        serverurl="${dev.serverurl}" 
+        retrieveTarget="@{dir}/unpackaged" 
+        unpackaged="DEVsrc/package1.xml"/>
+
+     -- <sf:retrieve 
+        username="${dev.username}" 
+        password="${dev.password}" 
+        serverurl="${dev.serverurl}" 
+        retrieveTarget="@{dir}/unpackaged" 
+        unpackaged="DEVsrc/package1.xml"/>
+        <sf:retrieve 
+        username="${dev.username}" 
+        password="${dev.password}" 
+        serverurl="${dev.serverurl}" 
+        retrieveTarget="@{dir}/unpackaged" 
+        unpackaged="DEVsrc/package2.xml"/>
+        <sf:retrieve 
+        username="${dev.username}" 
+        password="${dev.password}" 
+        serverurl="${dev.serverurl}" 
+        retrieveTarget="@{dir}/unpackaged" 
+        unpackaged="DEVsrc/package3.xml"/>
+        <sf:retrieve 
+        username="${dev.username}" 
+        password="${dev.password}" 
+        serverurl="${dev.serverurl}" 
+        retrieveTarget="@{dir}/unpackaged" 
+        unpackaged="DEVsrc/package4.xml"/>
+        <sf:retrieve 
+        username="${dev.username}" 
+        password="${dev.password}" 
+        serverurl="${dev.serverurl}" 
+        retrieveTarget="@{dir}/unpackaged" 
+        unpackaged="DEVsrc/package6.xml"/>
+        <sf:retrieve 
+        username="${dev.username}" 
+        password="${dev.password}" 
+        serverurl="${dev.serverurl}" 
+        retrieveTarget="@{dir}/unpackaged" 
+        unpackaged="DEVsrc/package6.xml"/>  --
+    </sequential>
+  </macrodef>
+
+   <target name="rundev">
+    <retrievedevUnpackaged dir="devRepo" />
+   </target>
+
+    <target name="devbulkretrieve">
+		<sf:bulkRetrieve 
+			username="${dev.username}" 
+			password="${dev.password}" 
+			serverurl="${dev.serverurl}" 
+			retrieveTarget="DEVsrc" 
+			unpackaged="DEVsrc/package.xml" 
+			pollWaitMillis="15000"
+			maxPoll="200" />
+	</target>
+
+
+	<target name="qaretrieve">
+		<sf:retrieve 
+			username="${qa.username}" 
+			password="${qa.password}" 
+			serverurl="${qa.serverurl}" 
+			retrieveTarget="QAsrc" 
+			unpackaged="QAsrc/package.xml" 
+			pollWaitMillis="10000"
+			maxPoll="200" />
+	</target>
+
+	
+	<target name="dev_qa">
+		<sf:deploy 
+			username="${qa.username}" 
+			password="${qa.password}" 
+			serverurl="${qa.serverurl}" 
+			deployRoot="DEVsrc"
+			pollWaitMillis="10000" 
+			maxPoll="100">
+			-- runTest>SampleDeployClass</runTest --
+		</sf:deploy>
+	</target>
+
+	<target name="qa_prod">
+		<sf:deploy 
+			username="${qa.deploy.username}" 
+			password="${qa.deploy.password}" 
+			serverurl="${qa.deploy.serverurl}" 
+			deployRoot="QAsrc"
+			pollWaitMillis="10000" 
+			maxPoll="100">
+			-- runTest>SampleDeployClass</runTest --
+		</sf:deploy>
+	</target>
+
+	<target name="qa_wipro">
+		<sf:deploy 
+			username="${qa.wipro.username}" 
+			password="${qa.wipro.password}" 
+			serverurl="${qa.wipro.serverurl}" 
+			deployRoot="QAsrc"
+			pollWaitMillis="10000" 
+			maxPoll="100">
+			-- runTest>SampleDeployClass</runTest --
+		</sf:deploy>
+	</target>
+	
+	<target name="qa_dev">
+		<sf:deploy 
+			username="${dev.username}" 
+			password="${dev.password}" 
+			serverurl="${dev.serverurl}" 
+			deployRoot="src"
+			pollWaitMillis="10000" 
+			maxPoll="100">
+			-- runTest>SampleDeployClass</runTest --
+		</sf:deploy>
+	</target>
+	
+	
+	-- Sequence 2 - If you want to remove some components, destructiveChanges.xml and Package.xml present in Delete Folder --
+<target name="qa_unDeploy">
+<sf:deploy username="${qa.username}"
+password="${qa.password}"
+serverurl="${qa.serverurl}"
+deployroot="DEVsrc">
+</sf:deploy>
+</target>
+	
+	
+	<target name="copy">
+		<scp todir="${dev.username}@${dev.serverurl}:${dev.target}">
+			<fileset dir="package"/>
+		</scp>
+	</target>
+	
+	
+	<target name="undeploy">
+		<sf:deploy username="${deploy.username}" password="${deploy.password}" serverurl="${deploy.url}" deployRoot="src"/>
+	</target>
+	
+	<target name="bulkRetrieve">
+	  <sf:bulkRetrieve
+	    username="${retrieve.username}"
+	    password="${retrieve.password}"
+	    serverurl="${retrieve.url}"
+	    metadataType="Report"
+	    retrieveTarget="src"/>
+	</target>
+	
+	-- Retrieve the information on all supported metadata type --
+    <target name="describeMetadata">
+      <sf:describeMetadata username="${retrieve.username}" password="${retrieve.password}" serverurl="${retrieve.url}"/>
+    </target>
+</project>
+	-->
+</project>
+
+
+

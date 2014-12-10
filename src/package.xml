@@ -4,5 +4,9 @@
         <members>googlemap</members>
         <name>ApexComponent</name>
     </types>
+	<types>
+        <members>account_googlemap</members>
+        <name>ApexPage</name>
+    </types>
     <version>31.0</version>
 </Package>

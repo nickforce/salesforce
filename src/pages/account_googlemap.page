@@ -1,0 +1,51 @@
+<apex:page standardController="Account">
+<apex:form >
+<base target="_parent" />
+  <style>
+    .getDirectionsLink {
+
+      padding-top: 5px; 
+      text-decoration:none;
+      color:blue !important;
+    }
+    .getDirectionsLink:hover {
+
+      text-decoration:underline;
+      color:blue !important;
+    }
+    .actionLinkMap {
+
+      text-decoration:none;
+      font-size: medium !important; 
+      font-weight: lighter !important; 
+      color:#878787 !important;
+    }
+    .actionLinkMap:hover {
+
+      text-decoration:underline;
+      font-size: medium !important; 
+      font-weight: lighter !important; 
+      color:#878787 !important;
+    }
+  </style>
+
+  <div style="margin-left:10%;">
+    <div style="display:inline-block;float:left;padding-left:5px;padding-top:5px;width:512px; margin-right:20px;">
+      <c:googlemap zoom="15" street="{!Account.BillingStreet}" city="{!Account.BillingCity}" zip="{!Account.BillingPostalcode}" locationName="{!Account.Name}" mapHeight="266" />
+    </div>
+    <div style="padding: 0 16px 16px 16px;display:inline;">
+      
+      <div style="display:inline;">
+        <b>
+          
+          <div style="padding-top:100px; font-size: medium !important; font-weight: lighter !important; color:#878787 !important; ">
+            <a target="_blank" href="https://maps.google.com/maps?f=q&hl=en&q={!Account.BillingStreet}+{!Account.BillingCity}+{!Account.BillingState}&om=1" class="actionLinkMap">{!Account.BillingStreet} {!Account.BillingCity}, {!Account.BillingState} {!Account.BillingPostalcode}</a>
+          </div>
+        </b>
+        <a target="_blank" href="https://www.google.com/maps/dir/''/{!Account.BillingStreet}+{!Account.BillingCity}+{!Account.BillingState}" class="getDirectionsLink">Get Directions</a>
+      </div>
+    </div>
+  </div>
+
+</apex:form>
+</apex:page>
